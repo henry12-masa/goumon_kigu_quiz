@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拷問器具クイズ（軽め演出）</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:"Yu Gothic","Hiragino Sans",sans-serif;
+  background:linear-gradient(135deg,#151515,#3b2a1d,#111);
+  color:#fff;
+}
+.layout{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  gap:20px;
+  padding:20px;
+}
+.game{
+  width:100%;
+  max-width:780px;
+  background:rgba(0,0,0,.58);
+  border:2px solid #b78b52;
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 18px 45px rgba(0,0,0,.35);
+}
+h1{text-align:center;color:#f0c27b;margin-bottom:8px}
+.sub{text-align:center;color:#ddd;margin-bottom:22px;line-height:1.7}
+.notice{
+  background:rgba(255,255,255,.08);
+  border-left:4px solid #f0c27b;
+  padding:12px 14px;
+  border-radius:10px;
+  color:#e8e0d2;
+  margin-bottom:20px;
+  line-height:1.7;
+  font-size:.95rem;
+}
+.status{
+  display:flex;
+  justify-content:space-between;
+  color:#f0c27b;
+  font-weight:bold;
+  margin-bottom:18px;
+}
+.question{
+  background:rgba(255,255,255,.08);
+  padding:22px;
+  border-radius:14px;
+  line-height:1.8;
+  font-size:1.22rem;
+  margin-bottom:18px;
+}
+.choices{display:grid;gap:12px}
+button{
+  border:none;
+  border-radius:12px;
+  padding:15px;
+  font-size:1rem;
+  font-weight:bold;
+  cursor:pointer;
+  background:#e9c083;
+  color:#21150c;
+  transition:.15s;
+}
+button:hover{background:#ffd999;transform:translateY(-1px)}
+button.correct{background:#35a85a;color:#fff}
+button.wrong{background:#c94949;color:#fff}
+button:disabled{cursor:not-allowed;opacity:.95}
+.result{margin-top:18px;min-height:55px;line-height:1.7;font-weight:bold}
+.explain{color:#ddd;margin-top:8px;font-weight:normal}
+.restart{display:none;margin-top:20px;width:100%;background:#9a6a39;color:#fff}
+.ad-area{width:320px;min-width:320px;position:sticky;top:20px}
+.ad-box{background:rgba(0,0,0,.45);border:2px solid #b78b52;border-radius:14px;padding:12px}
+.ad-title{text-align:center;color:#f0c27b;font-weight:bold;margin-bottom:10px}
+@media(max-width:1000px){.layout{flex-direction:column;align-items:center}.ad-area{width:100%;min-width:auto}}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="game">
+    <h1>拷問器具クイズ（軽め演出）</h1>
+    <div class="sub">名前当て・時代当てクイズ。歴史知識としてライトに出題します。</div>
+    <div class="notice">※ショッキングな描写は避け、博物館・歴史資料で見かける名前や時代背景を中心にしています。</div>
+    <div class="status">
+      <div id="count">1 / 50</div>
+      <div id="score">正解 0</div>
+    </div>
+    <div id="question" class="question"></div>
+    <div id="choices" class="choices"></div>
+    <div id="result" class="result"></div>
+    <button id="restart" class="restart" onclick="restartGame()">もう一度遊ぶ</button>
+  </div>
+  <div class="ad-area">
+    <div class="ad-box">
+      <div class="ad-title">スポンサー</div>
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8398161859137802"
+       crossorigin="anonymous"></script>
+      <!-- チェス -->
+      <ins class="adsbygoogle"
+       style="display:block"
+       data-ad-client="ca-pub-8398161859137802"
+       data-ad-slot="5599163841"
+       data-ad-format="auto"
+       data-full-width-responsive="true"></ins>
+      <script>
+       (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+  </div>
+</div>
+<script>
+const quizData = [
+];
+
+let questions = [];
+let current = 0;
+let score = 0;
+let lock = false;
+const SELECT_COUNT = 50;
+
+function shuffle(arr){
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startGame(){
+  questions = shuffle([...quizData]).slice(0, SELECT_COUNT);
+  current = 0;
+  score = 0;
+  lock = false;
+  document.getElementById("restart").style.display = "none";
+  showQuestion();
+}
+
+function showQuestion(){
+  lock = false;
+  const q = questions[current];
+  document.getElementById("count").textContent = `${current + 1} / ${SELECT_COUNT}`;
+  document.getElementById("score").textContent = `正解 ${score}`;
+  document.getElementById("question").textContent = q.q;
+  document.getElementById("result").innerHTML = "";
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+
+  shuffle([...q.choices]).forEach(choice => {
+    const btn = document.createElement("button");
+    btn.textContent = choice;
+    btn.onclick = () => checkAnswer(btn, choice);
+    choicesEl.appendChild(btn);
+  });
+}
+
+function checkAnswer(button, choice){
+  if(lock) return;
+  lock = true;
+  const q = questions[current];
+  const buttons = document.querySelectorAll("#choices button");
+
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    if(btn.textContent === q.answer){btn.classList.add("correct");}
+  });
+
+  if(choice === q.answer){
+    score++;
+    button.classList.add("correct");
+    document.getElementById("result").innerHTML = `正解！<div class="explain">${q.explain}</div>`;
+  }else{
+    button.classList.add("wrong");
+    document.getElementById("result").innerHTML = `不正解… 正解は「${q.answer}」<div class="explain">${q.explain}</div>`;
+  }
+
+  document.getElementById("score").textContent = `正解 ${score}`;
+  setTimeout(() => {
+    current++;
+    if(current < questions.length){showQuestion();}
+    else{finishGame();}
+  }, 1600);
+}
+
+function finishGame(){
+  document.getElementById("question").textContent = `${SELECT_COUNT}問終了！ ${score}問正解！`;
+  document.getElementById("choices").innerHTML = "";
+  let message = "";
+  if(score >= 45){message = "歴史刑罰ミュージアム級！名前も時代もかなり強い！";}
+  else if(score >= 32){message = "かなり詳しい！有名器具と時代背景をよく覚えています。";}
+  else if(score >= 20){message = "まずまず！名前当てから覚えると一気に伸びます。";}
+  else{message = "もう一度挑戦して、ライトに歴史用語を覚えよう！";}
+  document.getElementById("result").innerHTML = message;
+  document.getElementById("restart").style.display = "block";
+}
+function restartGame(){startGame();}
+startGame();
+</script>
+</body>
+</html>
